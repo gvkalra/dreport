@@ -1,9 +1,20 @@
 #include "dreport.h"
+#include "dcore.h"
 
 typedef struct appdata {
 	Evas_Object *win;
 	Evas_Object *conform;
-	Evas_Object *label;
+	Evas_Object *naviframe;
+	Evas_Object *list;
+	Elm_Genlist_Item_Class *itc;
+	GDBusProxy *system_proxy;
+	GDBusProxy *session_proxy;
+	Evas_Object *tabbar;
+	Elm_Object_Item *system_tab;
+	Elm_Object_Item *session_tab;
+	Elm_Object_Item *nf_it;
+	gchar **system_names;
+	gchar **session_names;
 } appdata_s;
 
 static void
@@ -18,6 +29,37 @@ win_back_cb(void *data, Evas_Object *obj, void *event_info)
 	appdata_s *ad = data;
 	/* Let window go to hide state. */
 	elm_win_lower(ad->win);
+}
+
+static void _system_tab_pressed_cb(void *data, Evas_Object *obj, void *event_info)
+{
+	dlog_print(DLOG_INFO, LOG_TAG, "System item clicked");
+}
+
+static void _session_tab_pressed_cb(void *data, Evas_Object *obj, void *event_info)
+{
+	dlog_print(DLOG_INFO, LOG_TAG, "Session item clicked");
+}
+
+static char *
+_genlist_text_get(void *data, Evas_Object *obj, const char *part)
+{
+	// Check this is text for the part we're expecting
+	if (strcmp(part, "elm.text") == 0)
+	{
+	  return strdup(data);
+	}
+	else {
+	  return NULL;
+	}
+}
+
+static void
+_genlist_selected_cb(void *data, Evas_Object *obj, void *event_info)
+{
+	//appdata_s *ad = data;
+	//Elm_Object_Item *it = (Elm_Object_Item*) event_info;
+	//elm_genlist_item_item_class_update(it, ad->itc);
 }
 
 static void
@@ -43,11 +85,41 @@ create_base_gui(appdata_s *ad)
 	elm_win_resize_object_add(ad->win, ad->conform);
 	evas_object_show(ad->conform);
 
-	/* Label*/
-	ad->label = elm_label_add(ad->conform);
-	elm_object_text_set(ad->label, "<align=center>Hello EFL</align>");
-	evas_object_size_hint_weight_set(ad->label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	elm_object_content_set(ad->conform, ad->label);
+	// naviframe
+	ad->naviframe = elm_naviframe_add(ad->conform);
+	evas_object_size_hint_weight_set(ad->naviframe, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	elm_win_resize_object_add(ad->conform, ad->naviframe);
+	elm_object_content_set(ad->conform, ad->naviframe);
+	evas_object_show(ad->naviframe);
+	ad->nf_it = elm_naviframe_item_push(ad->naviframe,"UiLayout",NULL, NULL, NULL, "tabbar/icon/notitle");
+
+	// Tabbar
+	ad->tabbar = elm_toolbar_add(ad->naviframe);
+	elm_object_style_set(ad->tabbar, "tabbar");
+	elm_toolbar_shrink_mode_set(ad->tabbar, ELM_TOOLBAR_SHRINK_EXPAND);
+	elm_toolbar_transverse_expanded_set(ad->tabbar, EINA_TRUE);
+
+	ad->system_tab = elm_toolbar_item_append(ad->tabbar, NULL, "System", _system_tab_pressed_cb, ad);
+	ad->session_tab = elm_toolbar_item_append(ad->tabbar, NULL, "Session", _session_tab_pressed_cb, ad);
+	elm_object_item_part_content_set(ad->nf_it, "tabbar", ad->tabbar);
+
+	// Set the first view
+	elm_toolbar_item_selected_set(ad->system_tab, EINA_TRUE);
+
+	// create list
+	ad->list = elm_genlist_add(ad->naviframe);
+	evas_object_size_hint_weight_set(ad->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_size_hint_align_set(ad->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
+	elm_scroller_policy_set(ad->list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
+	evas_object_show(ad->list);
+
+	// create item class
+	ad->itc = elm_genlist_item_class_new();
+	ad->itc->item_style = "default_style";
+	ad->itc->func.text_get = _genlist_text_get;
+	ad->itc->func.content_get = NULL;
+	ad->itc->func.state_get = NULL;
+	ad->itc->func.del = NULL;
 
 	/* Show window after base gui is set up */
 	evas_object_show(ad->win);
@@ -61,6 +133,13 @@ app_create(void *data)
 		If this function returns true, the main loop of application starts
 		If this function returns false, the application is terminated */
 	appdata_s *ad = data;
+
+	// set up dbus proxies
+	ad->system_proxy = dbus_setup_proxy(G_BUS_TYPE_SYSTEM);
+	ad->system_names = dbus_get_activatable_names(ad->system_proxy);
+
+	ad->session_proxy = dbus_setup_proxy(G_BUS_TYPE_SESSION);
+	ad->session_names = dbus_get_activatable_names(ad->session_proxy);
 
 	create_base_gui(ad);
 
@@ -89,6 +168,13 @@ static void
 app_terminate(void *data)
 {
 	/* Release all resources. */
+	appdata_s *ad = data;
+
+	dbus_close_proxy(ad->system_proxy);
+	g_strfreev(ad->system_names);
+
+	dbus_close_proxy(ad->session_proxy);
+	g_strfreev(ad->session_names);
 }
 
 static void
