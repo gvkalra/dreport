@@ -4,3 +4,5 @@ Debug
 SA_Report
 res
 .package-stamp
+.rds_delta
+.sdk_delta.info

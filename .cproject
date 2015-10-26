@@ -25,7 +25,7 @@
 								<option id="gnu.cpp.compiler.option.optimization.level.1653558519" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="sbi.gnu.cpp.compiler.option.debugging.level.core.1584451854" name="Debug level" superClass="sbi.gnu.cpp.compiler.option.debugging.level.core" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="sbi.gnu.cpp.compiler.option.1886199093" superClass="sbi.gnu.cpp.compiler.option" valueType="userObjs">
-									<listOptionValue builtIn="false" value="mobile-2.4-emulator.core_llvm36.i386.core.app"/>
+									<listOptionValue builtIn="false" value="mobile-2.4-device.core_llvm36.armel.core.app"/>
 								</option>
 								<option id="sbi.gnu.cpp.compiler.option.frameworks_inc.core.798301189" superClass="sbi.gnu.cpp.compiler.option.frameworks_inc.core" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${SBI_SYSROOT}/usr/include/libxml2&quot;"/>
@@ -112,6 +112,7 @@
 									<listOptionValue builtIn="false" value="${RS_COMPILER_MISC}"/>
 									<listOptionValue builtIn="false" value=" -fPIE"/>
 									<listOptionValue builtIn="false" value="--sysroot=&quot;${SBI_SYSROOT}&quot;"/>
+									<listOptionValue builtIn="false" value="-mthumb"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.51297644" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
@@ -128,7 +129,7 @@
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.option.optimization.level.655729333" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" valueType="enumerated"/>
 								<option id="sbi.gnu.c.compiler.option.debugging.level.core.3333371" name="Debug level" superClass="sbi.gnu.c.compiler.option.debugging.level.core" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="sbi.gnu.c.compiler.option.634527977" superClass="sbi.gnu.c.compiler.option" valueType="userObjs">
-									<listOptionValue builtIn="false" value="mobile-2.4-emulator.core_llvm36.i386.core.app"/>
+									<listOptionValue builtIn="false" value="mobile-2.4-device.core_llvm36.armel.core.app"/>
 								</option>
 								<option id="sbi.gnu.c.compiler.option.frameworks_inc.core.937992795" superClass="sbi.gnu.c.compiler.option.frameworks_inc.core" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${SBI_SYSROOT}/usr/include/libxml2&quot;"/>
@@ -215,6 +216,7 @@
 									<listOptionValue builtIn="false" value="${RS_COMPILER_MISC}"/>
 									<listOptionValue builtIn="false" value=" -fPIE"/>
 									<listOptionValue builtIn="false" value="--sysroot=&quot;${SBI_SYSROOT}&quot;"/>
+									<listOptionValue builtIn="false" value="-mthumb"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.807316719" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
@@ -247,7 +249,7 @@
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
 								</inputType>
 							</tool>
-							<tool command="i386-linux-gnueabi-as" id="org.tizen.nativeapp.tool.sbi.gnu.assembler.base.58633865" name="Assembler" superClass="org.tizen.nativeapp.tool.sbi.gnu.assembler.base">
+							<tool command="arm-linux-gnueabi-as" id="org.tizen.nativeapp.tool.sbi.gnu.assembler.base.58633865" name="Assembler" superClass="org.tizen.nativeapp.tool.sbi.gnu.assembler.base">
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.346411747" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 							<tool id="org.tizen.nativecore.tool.fnmapgen.1508972286" name="C FN-Map Generator" superClass="org.tizen.nativecore.tool.fnmapgen"/>
