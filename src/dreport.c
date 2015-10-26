@@ -5,7 +5,8 @@ typedef struct appdata {
 	Evas_Object *win;
 	Evas_Object *conform;
 	Evas_Object *naviframe;
-	Evas_Object *list;
+	Evas_Object *system_list;
+	Evas_Object *session_list;
 	Elm_Genlist_Item_Class *itc;
 	GDBusProxy *system_proxy;
 	GDBusProxy *session_proxy;
@@ -31,14 +32,22 @@ win_back_cb(void *data, Evas_Object *obj, void *event_info)
 	elm_win_lower(ad->win);
 }
 
-static void _system_tab_pressed_cb(void *data, Evas_Object *obj, void *event_info)
+static void _system_tab_selected_cb(void *data, Evas_Object *obj, void *event_info)
 {
-	dlog_print(DLOG_INFO, LOG_TAG, "System item clicked");
+	appdata_s *ad = data;
+	elm_object_part_content_unset(ad->naviframe, "elm.swallow.content");
+	evas_object_hide(ad->session_list);
+	elm_object_part_content_set(ad->naviframe, "elm.swallow.content", ad->system_list);
+	evas_object_show(ad->system_list);
 }
 
-static void _session_tab_pressed_cb(void *data, Evas_Object *obj, void *event_info)
+static void _session_tab_selected_cb(void *data, Evas_Object *obj, void *event_info)
 {
-	dlog_print(DLOG_INFO, LOG_TAG, "Session item clicked");
+	appdata_s *ad = data;
+	elm_object_part_content_unset(ad->naviframe, "elm.swallow.content");
+	evas_object_hide(ad->system_list);
+	elm_object_part_content_set(ad->naviframe, "elm.swallow.content", ad->session_list);
+	evas_object_show(ad->session_list);
 }
 
 static char *
@@ -57,14 +66,18 @@ _genlist_text_get(void *data, Evas_Object *obj, const char *part)
 static void
 _genlist_selected_cb(void *data, Evas_Object *obj, void *event_info)
 {
-	//appdata_s *ad = data;
-	//Elm_Object_Item *it = (Elm_Object_Item*) event_info;
-	//elm_genlist_item_item_class_update(it, ad->itc);
+	appdata_s *ad = data;
+	Elm_Object_Item *it = (Elm_Object_Item*) event_info;
+	//Evas_Object *list= ((obj == ad->system_list) ? ad->system_list : ad->session_list);
+
+	elm_genlist_item_selected_set(it, EINA_FALSE);
 }
 
 static void
 create_base_gui(appdata_s *ad)
 {
+	int i;
+
 	/* Window */
 	ad->win = elm_win_util_standard_add(PACKAGE, PACKAGE);
 	elm_win_autodel_set(ad->win, EINA_TRUE);
@@ -99,19 +112,23 @@ create_base_gui(appdata_s *ad)
 	elm_toolbar_shrink_mode_set(ad->tabbar, ELM_TOOLBAR_SHRINK_EXPAND);
 	elm_toolbar_transverse_expanded_set(ad->tabbar, EINA_TRUE);
 
-	ad->system_tab = elm_toolbar_item_append(ad->tabbar, NULL, "System", _system_tab_pressed_cb, ad);
-	ad->session_tab = elm_toolbar_item_append(ad->tabbar, NULL, "Session", _session_tab_pressed_cb, ad);
+	ad->system_tab = elm_toolbar_item_append(ad->tabbar, NULL, "System", _system_tab_selected_cb, ad);
+	ad->session_tab = elm_toolbar_item_append(ad->tabbar, NULL, "Session", _session_tab_selected_cb, ad);
 	elm_object_item_part_content_set(ad->nf_it, "tabbar", ad->tabbar);
 
-	// Set the first view
-	elm_toolbar_item_selected_set(ad->system_tab, EINA_TRUE);
+	// create system list/itc
+	ad->system_list = elm_genlist_add(ad->naviframe);
+	evas_object_size_hint_weight_set(ad->system_list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_size_hint_align_set(ad->system_list, EVAS_HINT_FILL, EVAS_HINT_FILL);
+	elm_scroller_policy_set(ad->system_list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
+	evas_object_show(ad->system_list);
 
-	// create list
-	ad->list = elm_genlist_add(ad->naviframe);
-	evas_object_size_hint_weight_set(ad->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	evas_object_size_hint_align_set(ad->list, EVAS_HINT_FILL, EVAS_HINT_FILL);
-	elm_scroller_policy_set(ad->list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
-	evas_object_show(ad->list);
+	// create session list/itc
+	ad->session_list = elm_genlist_add(ad->naviframe);
+	evas_object_size_hint_weight_set(ad->session_list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_size_hint_align_set(ad->session_list, EVAS_HINT_FILL, EVAS_HINT_FILL);
+	elm_scroller_policy_set(ad->session_list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
+	evas_object_show(ad->session_list);
 
 	// create item class
 	ad->itc = elm_genlist_item_class_new();
@@ -120,6 +137,19 @@ create_base_gui(appdata_s *ad)
 	ad->itc->func.content_get = NULL;
 	ad->itc->func.state_get = NULL;
 	ad->itc->func.del = NULL;
+
+	// add items to system list
+	for (i = 0; ad->system_names != NULL && ad->system_names[i] != NULL; i++) {
+			elm_genlist_item_append(ad->system_list, ad->itc, ad->system_names[i], NULL, ELM_GENLIST_ITEM_NONE, _genlist_selected_cb, ad);
+	}
+
+	// add items to session list
+	for (i = 0; ad->session_names != NULL && ad->session_names[i] != NULL; i++) {
+			elm_genlist_item_append(ad->session_list, ad->itc, ad->session_names[i], NULL, ELM_GENLIST_ITEM_NONE, _genlist_selected_cb, ad);
+	}
+
+	// Set the first view
+	elm_toolbar_item_selected_set(ad->system_tab, EINA_TRUE);
 
 	/* Show window after base gui is set up */
 	evas_object_show(ad->win);
