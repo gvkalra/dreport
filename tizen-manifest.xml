@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns="http://tizen.org/ns/packages" api-version="2.3" package="com.samsung.dreport" version="1.0.0">
+	<profile name="mobile" />
+	<ui-application appid="com.samsung.dreport" exec="dreport" type="capp" multiple="false" taskmanage="true" nodisplay="false">
+		<icon>dreport.png</icon>
+		<label>dreport</label>
+	</ui-application>
+</manifest>
