@@ -185,12 +185,12 @@ app_create(void *data)
 	// set up dbus proxies
 	ad->system_proxy = dbus_setup_proxy(G_BUS_TYPE_SYSTEM);
 	ad->system_activable_names = dbus_get_activatable_names(ad->system_proxy);
-	ad->system_names = dbus_get_names(ad->system_proxy);
+	ad->system_names = dbus_get_names(ad->system_proxy, FALSE);
 
 
 	ad->session_proxy = dbus_setup_proxy(G_BUS_TYPE_SESSION);
 	ad->session_activable_names = dbus_get_activatable_names(ad->session_proxy);
-	ad->session_names = dbus_get_names(ad->session_proxy);
+	ad->session_names = dbus_get_names(ad->session_proxy, FALSE);
 
 	create_base_gui(ad);
 

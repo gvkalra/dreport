@@ -11,7 +11,7 @@ void
 dbus_close_proxy(GDBusProxy *proxy);
 
 gchar **
-dbus_get_names(GDBusProxy *proxy);
+dbus_get_names(GDBusProxy *proxy, gboolean allow_anonymous);
 
 gchar **
 dbus_get_activatable_names(GDBusProxy *proxy);

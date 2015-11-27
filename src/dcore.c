@@ -36,9 +36,9 @@ dbus_get_activatable_names(GDBusProxy *proxy)
 }
 
 gchar **
-dbus_get_names(GDBusProxy *proxy)
+dbus_get_names(GDBusProxy *proxy, gboolean allow_anonymous)
 {
-	gchar ** names;
+	gchar **names;
 	GVariant *result = NULL;
 	GError *error = NULL;
 
@@ -49,8 +49,32 @@ dbus_get_names(GDBusProxy *proxy)
 	g_assert(result);
 	g_variant_get(result, "(^as)", &names);
 	g_variant_unref(result);
-	return names;
 
+	if (allow_anonymous)
+		return names;
+
+	/* filter anonymous */
+	{
+		int iter = 0;
+		GPtrArray *array = NULL;
+		gchar **filtered_names = NULL;
+
+		array = g_ptr_array_new();
+
+		while (names[iter]) {
+			if (!g_str_has_prefix(names[iter], ":")) {
+				g_ptr_array_add(array, g_strdup(names[iter]));
+			}
+
+			iter++;
+		}
+		g_ptr_array_add(array, NULL);
+
+		filtered_names = (gchar **)g_ptr_array_free(array, FALSE);
+
+		g_strfreev(names);
+		return filtered_names;
+	}
 }
 
 void
