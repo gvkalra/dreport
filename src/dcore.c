@@ -9,7 +9,7 @@ dbus_setup_proxy(GBusType bus_type)
 
 	// gdbus introspect --system --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus
 	proxy = g_dbus_proxy_new_for_bus_sync(bus_type, G_DBUS_PROXY_FLAGS_NONE,
-	NULL, "org.freedesktop.DBus", "/org/freedesktop/DBus",
+	NULL, "org.freedesktop.DBus", "/",
 			"org.freedesktop.DBus", NULL, &error);
 	g_assert_no_error(error);
 	g_assert(proxy);
