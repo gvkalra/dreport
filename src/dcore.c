@@ -1,54 +1,72 @@
 #include "dcore.h"
 #include <dlog.h>
 
-GDBusProxy *
-dbus_setup_proxy(GBusType bus_type)
+GDBusConnection *
+dbus_setup_connection(GBusType bus_type)
 {
-	GDBusProxy *proxy = NULL;
+	GDBusConnection *conn = NULL;
 	GError *error = NULL;
 
-	// gdbus introspect --system --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus
-	proxy = g_dbus_proxy_new_for_bus_sync(bus_type, G_DBUS_PROXY_FLAGS_NONE,
-	NULL, "org.freedesktop.DBus", "/",
-			"org.freedesktop.DBus", NULL, &error);
+	conn = g_bus_get_sync(bus_type, NULL, &error);
 	g_assert_no_error(error);
-	g_assert(proxy);
 
-	return proxy;
+	return conn;
 }
 
 gchar **
-dbus_get_activatable_names(GDBusProxy *proxy)
+dbus_get_activatable_names(GDBusConnection *connection)
 {
+	GDBusProxy *proxy = NULL;
 	gchar **activable_names;
 	GVariant *result = NULL;
 	GError *error = NULL;
 
-	// gdbus call --system --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus --method org.freedesktop.DBus.ListActivatableNames
-	result = g_dbus_proxy_call_sync(proxy,
-			"org.freedesktop.DBus.ListActivatableNames", g_variant_new("()"),
-			G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
+	/* Setup proxy */
+	proxy = g_dbus_proxy_new_sync(connection, G_DBUS_PROXY_FLAGS_NONE, NULL,
+			"org.freedesktop.DBus", "/", "org.freedesktop.DBus",
+			NULL, &error);
+	g_assert_no_error(error);
+	g_assert(proxy);
+
+	/* Get Names */
+	result = g_dbus_proxy_call_sync(proxy, "org.freedesktop.DBus.ListActivatableNames",
+			g_variant_new("()"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
 	g_assert_no_error(error);
 	g_assert(result);
 	g_variant_get(result, "(^as)", &activable_names);
+
+	/* Cleanup */
 	g_variant_unref(result);
+	g_object_unref(proxy);
+
 	return activable_names;
 }
 
 gchar **
-dbus_get_names(GDBusProxy *proxy, gboolean allow_anonymous)
+dbus_get_names(GDBusConnection *connection, gboolean allow_anonymous)
 {
+	GDBusProxy *proxy = NULL;
 	gchar **names;
 	GVariant *result = NULL;
 	GError *error = NULL;
 
-	// gdbus call --system --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus --method org.freedesktop.DBus.ListNames
+	/* Setup proxy */
+	proxy = g_dbus_proxy_new_sync(connection, G_DBUS_PROXY_FLAGS_NONE, NULL,
+			"org.freedesktop.DBus", "/", "org.freedesktop.DBus",
+			NULL, &error);
+	g_assert_no_error(error);
+	g_assert(proxy);
+
+	/* Get Names */
 	result = g_dbus_proxy_call_sync(proxy, "org.freedesktop.DBus.ListNames",
 			g_variant_new("()"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
 	g_assert_no_error(error);
 	g_assert(result);
 	g_variant_get(result, "(^as)", &names);
+
+	/* Cleanup */
 	g_variant_unref(result);
+	g_object_unref(proxy);
 
 	if (allow_anonymous)
 		return names;
@@ -78,7 +96,7 @@ dbus_get_names(GDBusProxy *proxy, gboolean allow_anonymous)
 }
 
 void
-dbus_close_proxy(GDBusProxy *proxy)
+dbus_close_connection(GDBusConnection *connection)
 {
-	g_object_unref(proxy);
+	g_object_unref(connection);
 }

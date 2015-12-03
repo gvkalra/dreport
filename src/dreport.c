@@ -7,8 +7,8 @@ typedef struct appdata {
 	Evas_Object *naviframe;
 	Evas_Object *system_list;
 	Evas_Object *session_list;
-	GDBusProxy *system_proxy;
-	GDBusProxy *session_proxy;
+	GDBusConnection *system_connection;
+	GDBusConnection *session_connection;
 	Evas_Object *tabbar;
 	Elm_Object_Item *system_tab;
 	Elm_Object_Item *session_tab;
@@ -183,14 +183,14 @@ app_create(void *data)
 	appdata_s *ad = data;
 
 	// set up dbus proxies
-	ad->system_proxy = dbus_setup_proxy(G_BUS_TYPE_SYSTEM);
-	ad->system_activable_names = dbus_get_activatable_names(ad->system_proxy);
-	ad->system_names = dbus_get_names(ad->system_proxy, FALSE);
+	ad->system_connection = dbus_setup_connection(G_BUS_TYPE_SYSTEM);
+	ad->system_activable_names = dbus_get_activatable_names(ad->system_connection);
+	ad->system_names = dbus_get_names(ad->system_connection, FALSE);
 
 
-	ad->session_proxy = dbus_setup_proxy(G_BUS_TYPE_SESSION);
-	ad->session_activable_names = dbus_get_activatable_names(ad->session_proxy);
-	ad->session_names = dbus_get_names(ad->session_proxy, FALSE);
+	ad->session_connection = dbus_setup_connection(G_BUS_TYPE_SESSION);
+	ad->session_activable_names = dbus_get_activatable_names(ad->session_connection);
+	ad->session_names = dbus_get_names(ad->session_connection, FALSE);
 
 	create_base_gui(ad);
 
@@ -221,11 +221,11 @@ app_terminate(void *data)
 	/* Release all resources. */
 	appdata_s *ad = data;
 
-	dbus_close_proxy(ad->system_proxy);
+	dbus_close_connection(ad->system_connection);
 	g_strfreev(ad->system_activable_names);
 	g_strfreev(ad->system_names);
 
-	dbus_close_proxy(ad->session_proxy);
+	dbus_close_connection(ad->session_connection);
 	g_strfreev(ad->session_activable_names);
 	g_strfreev(ad->session_names);
 }
