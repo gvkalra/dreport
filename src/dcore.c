@@ -30,23 +30,21 @@ __dbus_get_object_paths_internal(GDBusConnection *connection, gchar *service,
 	/* Setup proxy */
 	proxy = g_dbus_proxy_new_sync(connection, G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START, NULL,
 				service, root, service, NULL, &error);
-	if (error != NULL)
+	if (error != NULL || proxy == NULL)
 		goto EXIT;
 
 	/* Introspect */
 	result = g_dbus_proxy_call_sync(proxy, "org.freedesktop.DBus.Introspectable.Introspect",
 			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
-	if (error != NULL)
+	if (error != NULL || result == NULL)
 		goto EXIT;
 
-	g_assert(result);
 	g_variant_get(result, "(&s)", &xml_data);
 
 	/* Parse XML */
 	node_info = g_dbus_node_info_new_for_xml(xml_data, &error);
-	if (error != NULL)
+	if (error != NULL || node_info == NULL)
 		goto EXIT;
-	g_assert(node_info);
 
 	nodes = node_info->nodes;
 	if (nodes == NULL)
