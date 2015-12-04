@@ -1,0 +1,9 @@
+image: tizen-sdk:Mobile2.4
+
+stages:
+   - build
+
+build_master:
+ stage: build
+ script:
+   - ./build.sh
