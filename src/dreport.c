@@ -7,8 +7,9 @@ typedef struct appdata {
 	Evas_Object *naviframe;
 	Evas_Object *system_list;
 	Evas_Object *session_list;
-	GDBusProxy *system_proxy;
-	GDBusProxy *session_proxy;
+	Evas_Object *object_paths;
+	GDBusConnection *system_connection;
+	GDBusConnection *session_connection;
 	Evas_Object *tabbar;
 	Elm_Object_Item *system_tab;
 	Elm_Object_Item *session_tab;
@@ -17,6 +18,7 @@ typedef struct appdata {
 	gchar **session_activable_names;
 	gchar **system_names;
 	gchar **session_names;
+	gchar **object_path_names;
 } appdata_s;
 
 static void
@@ -36,13 +38,29 @@ win_back_cb(void *data, Evas_Object *obj, void *event_info)
 static void _tab_selected_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	appdata_s *ad = data;
+
+	/* clear object list TODO: cleanup code needs revisit */
+	elm_object_part_content_unset(ad->naviframe, "elm.swallow.content");
+
+	if (evas_object_visible_get(ad->object_paths))
+		evas_object_hide(ad->object_paths);
+
+	/* previous list exist */
+	if (ad->object_paths) {
+		elm_genlist_clear(ad->object_paths);
+		ad->object_paths = NULL;
+	}
+
+	if (ad->object_path_names) {
+		g_strfreev(ad->object_path_names);
+		ad->object_path_names = NULL;
+	}
+
 	if (event_info == ad->system_tab){
-		elm_object_part_content_unset(ad->naviframe, "elm.swallow.content");
 		evas_object_hide(ad->session_list);
 		elm_object_part_content_set(ad->naviframe, "elm.swallow.content", ad->system_list);
 		evas_object_show(ad->system_list);
 	} else {
-		elm_object_part_content_unset(ad->naviframe, "elm.swallow.content");
 		evas_object_hide(ad->system_list);
 		elm_object_part_content_set(ad->naviframe, "elm.swallow.content", ad->session_list);
 		evas_object_show(ad->session_list);
@@ -65,9 +83,51 @@ _genlist_text_get(void *data, Evas_Object *obj, const char *part)
 static void
 _genlist_selected_cb(void *data, Evas_Object *obj, void *event_info)
 {
+	Elm_Genlist_Item_Class *itc = NULL;
 	appdata_s *ad = data;
 	Elm_Object_Item *it = (Elm_Object_Item*) event_info;
-	//Evas_Object *list= ((obj == ad->system_list) ? ad->system_list : ad->session_list);
+	gchar *service = NULL;
+	guint iter;
+	Evas_Object *list = ((obj == ad->system_list) ? ad->system_list : ad->session_list);
+
+	/* previous list exist */
+	if (ad->object_paths) {
+		elm_genlist_clear(ad->object_paths);
+		ad->object_paths = NULL;
+	}
+
+	if (ad->object_path_names) {
+		g_strfreev(ad->object_path_names);
+		ad->object_path_names = NULL;
+	}
+
+	service = elm_object_item_data_get(it);
+	ad->object_path_names = dbus_get_object_paths(ad->system_connection, service);
+
+	/* hide current list */
+	elm_object_part_content_unset(ad->naviframe, "elm.swallow.content");
+	evas_object_hide(list);
+
+	/* create list for objects */
+	ad->object_paths = elm_genlist_add(ad->naviframe);
+	evas_object_size_hint_weight_set(ad->object_paths, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_size_hint_align_set(ad->object_paths, EVAS_HINT_FILL, EVAS_HINT_FILL);
+	elm_scroller_policy_set(ad->object_paths, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
+
+	itc = elm_genlist_item_class_new();
+	itc->item_style = "default_style";
+	itc->func.text_get = _genlist_text_get;
+	itc->func.content_get = NULL;
+	itc->func.state_get = NULL;
+	itc->func.del = NULL;
+
+	for (iter = 0; ad->object_path_names != NULL && ad->object_path_names[iter] != NULL; iter++)
+		elm_genlist_item_append(ad->object_paths, itc, ad->object_path_names[iter], NULL, ELM_GENLIST_ITEM_NONE, NULL, ad);
+
+	elm_genlist_item_class_free(itc);
+
+	elm_object_part_content_set(ad->naviframe, "elm.swallow.content", ad->object_paths);
+	evas_object_show(ad->object_paths);
 
 	elm_genlist_item_selected_set(it, EINA_FALSE);
 }
@@ -183,14 +243,14 @@ app_create(void *data)
 	appdata_s *ad = data;
 
 	// set up dbus proxies
-	ad->system_proxy = dbus_setup_proxy(G_BUS_TYPE_SYSTEM);
-	ad->system_activable_names = dbus_get_activatable_names(ad->system_proxy);
-	ad->system_names = dbus_get_names(ad->system_proxy);
+	ad->system_connection = dbus_setup_connection(G_BUS_TYPE_SYSTEM);
+	ad->system_activable_names = dbus_get_activatable_names(ad->system_connection);
+	ad->system_names = dbus_get_names(ad->system_connection, FALSE);
 
 
-	ad->session_proxy = dbus_setup_proxy(G_BUS_TYPE_SESSION);
-	ad->session_activable_names = dbus_get_activatable_names(ad->session_proxy);
-	ad->session_names = dbus_get_names(ad->session_proxy);
+	ad->session_connection = dbus_setup_connection(G_BUS_TYPE_SESSION);
+	ad->session_activable_names = dbus_get_activatable_names(ad->session_connection);
+	ad->session_names = dbus_get_names(ad->session_connection, FALSE);
 
 	create_base_gui(ad);
 
@@ -221,13 +281,18 @@ app_terminate(void *data)
 	/* Release all resources. */
 	appdata_s *ad = data;
 
-	dbus_close_proxy(ad->system_proxy);
+	dbus_close_connection(ad->system_connection);
 	g_strfreev(ad->system_activable_names);
 	g_strfreev(ad->system_names);
 
-	dbus_close_proxy(ad->session_proxy);
+	dbus_close_connection(ad->session_connection);
 	g_strfreev(ad->session_activable_names);
 	g_strfreev(ad->session_names);
+
+	if (ad->object_path_names) {
+		g_strfreev(ad->object_path_names);
+		ad->object_path_names = NULL;
+	}
 }
 
 static void

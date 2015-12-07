@@ -4,14 +4,17 @@
 #include <gio/gio.h>
 #include "dreport.h"
 
-GDBusProxy *
-dbus_setup_proxy(GBusType bus_type);
+GDBusConnection *
+dbus_setup_connection(GBusType bus_type);
 
 void
-dbus_close_proxy(GDBusProxy *proxy);
+dbus_close_connection(GDBusConnection *connection);
 
 gchar **
-dbus_get_names(GDBusProxy *proxy);
+dbus_get_names(GDBusConnection *connection, gboolean allow_anonymous);
 
 gchar **
-dbus_get_activatable_names(GDBusProxy *proxy);
+dbus_get_activatable_names(GDBusConnection *connection);
+
+gchar **
+dbus_get_object_paths(GDBusConnection *connection, gchar *service);
