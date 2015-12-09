@@ -17,7 +17,6 @@ static void
 __dbus_get_object_paths_internal(GDBusConnection *connection, gchar *service,
 		gchar *root, GPtrArray *array)
 {
-	gchar **obj_paths = NULL;
 	GDBusProxy *proxy = NULL;
 	const gchar *xml_data = NULL;
 	GDBusNodeInfo *node_info = NULL;
@@ -89,35 +88,6 @@ dbus_get_object_paths(GDBusConnection *connection, gchar *service)
 	g_ptr_array_add(array, NULL);
 	obj_paths = (gchar **)g_ptr_array_free(array, FALSE);
 	return obj_paths;
-}
-
-gchar **
-dbus_get_activatable_names(GDBusConnection *connection)
-{
-	GDBusProxy *proxy = NULL;
-	gchar **activable_names;
-	GVariant *result = NULL;
-	GError *error = NULL;
-
-	/* Setup proxy */
-	proxy = g_dbus_proxy_new_sync(connection, G_DBUS_PROXY_FLAGS_NONE, NULL,
-			"org.freedesktop.DBus", "/", "org.freedesktop.DBus",
-			NULL, &error);
-	g_assert_no_error(error);
-	g_assert(proxy);
-
-	/* Get Names */
-	result = g_dbus_proxy_call_sync(proxy, "org.freedesktop.DBus.ListActivatableNames",
-			g_variant_new("()"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
-	g_assert_no_error(error);
-	g_assert(result);
-	g_variant_get(result, "(^as)", &activable_names);
-
-	/* Cleanup */
-	g_variant_unref(result);
-	g_object_unref(proxy);
-
-	return activable_names;
 }
 
 gchar **
