@@ -8,13 +8,20 @@ dbus_setup_connection(GBusType bus_type)
 	GError *error = NULL;
 
 	conn = g_bus_get_sync(bus_type, NULL, &error);
-	g_assert_no_error(error);
+	if (error != NULL || conn == NULL)
+		goto ERROR;
 
 	return conn;
+
+ERROR:
+	dlog_print(DLOG_ERROR, LOG_TAG, "g_bus_get_sync() failed [%d]: %s",
+			error->code, error->message);
+	g_error_free(error);
+	return NULL;
 }
 
 static void
-__dbus_get_object_paths_internal(GDBusConnection *connection, gchar *service,
+__dbus_get_object_paths_internal(GDBusConnection *connection, const gchar *service,
 		gchar *root, GPtrArray *array)
 {
 	GDBusProxy *proxy = NULL;
@@ -71,7 +78,7 @@ EXIT:
 }
 
 gchar **
-dbus_get_object_paths(GDBusConnection *connection, gchar *service)
+dbus_get_object_paths(GDBusConnection *connection, const gchar *service)
 {
 	gchar **obj_paths = NULL;
 	GPtrArray *array = NULL;
