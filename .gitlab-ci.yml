@@ -3,7 +3,12 @@ image: tizen-sdk:Mobile2.4
 stages:
    - build
 
-build_master:
+compile:
  stage: build
  script:
-   - ./build.sh
+   - ninja -C ./build all
+
+analyze:
+ stage: build
+ script:
+   - ninja -C ./build sa
