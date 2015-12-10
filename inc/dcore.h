@@ -14,7 +14,4 @@ gchar **
 dbus_get_names(GDBusConnection *connection, gboolean allow_anonymous);
 
 gchar **
-dbus_get_activatable_names(GDBusConnection *connection);
-
-gchar **
 dbus_get_object_paths(GDBusConnection *connection, gchar *service);

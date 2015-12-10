@@ -14,8 +14,6 @@ typedef struct appdata {
 	Elm_Object_Item *system_tab;
 	Elm_Object_Item *session_tab;
 	Elm_Object_Item *nf_it;
-	gchar **system_activable_names;
-	gchar **session_activable_names;
 	gchar **system_names;
 	gchar **session_names;
 	gchar **object_path_names;
@@ -206,19 +204,11 @@ create_base_gui(appdata_s *ad)
 	itc->func.del = NULL;
 
 	// add items to system list
-	for (i = 0; ad->system_activable_names != NULL && ad->system_activable_names[i] != NULL; i++) {
-		elm_genlist_item_sorted_insert(ad->system_list, itc, ad->system_activable_names[i], NULL, ELM_GENLIST_ITEM_NONE, _compare_cb, _genlist_selected_cb, ad);
-	}
-
 	for (i = 0; ad->system_names != NULL && ad->system_names[i] != NULL; i++) {
 			elm_genlist_item_sorted_insert(ad->system_list, itc, ad->system_names[i], NULL, ELM_GENLIST_ITEM_NONE, _compare_cb, _genlist_selected_cb, ad);
 		}
 
 	// add items to session list
-	for (i = 0; ad->session_activable_names != NULL && ad->session_activable_names[i] != NULL; i++) {
-		elm_genlist_item_sorted_insert(ad->session_list, itc, ad->session_activable_names[i], NULL, ELM_GENLIST_ITEM_NONE, _compare_cb, _genlist_selected_cb, ad);
-	}
-
 	for (i = 0; ad->session_names != NULL && ad->session_names[i] != NULL; i++) {
 			elm_genlist_item_sorted_insert(ad->session_list, itc, ad->session_names[i], NULL, ELM_GENLIST_ITEM_NONE, _compare_cb, _genlist_selected_cb, ad);
 	}
@@ -244,12 +234,10 @@ app_create(void *data)
 
 	// set up dbus proxies
 	ad->system_connection = dbus_setup_connection(G_BUS_TYPE_SYSTEM);
-	ad->system_activable_names = dbus_get_activatable_names(ad->system_connection);
 	ad->system_names = dbus_get_names(ad->system_connection, FALSE);
 
 
 	ad->session_connection = dbus_setup_connection(G_BUS_TYPE_SESSION);
-	ad->session_activable_names = dbus_get_activatable_names(ad->session_connection);
 	ad->session_names = dbus_get_names(ad->session_connection, FALSE);
 
 	create_base_gui(ad);
@@ -282,11 +270,9 @@ app_terminate(void *data)
 	appdata_s *ad = data;
 
 	dbus_close_connection(ad->system_connection);
-	g_strfreev(ad->system_activable_names);
 	g_strfreev(ad->system_names);
 
 	dbus_close_connection(ad->session_connection);
-	g_strfreev(ad->session_activable_names);
 	g_strfreev(ad->session_names);
 
 	if (ad->object_path_names) {
