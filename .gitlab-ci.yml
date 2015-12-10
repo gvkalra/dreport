@@ -1,4 +1,4 @@
-image: tizen-sdk:Mobile2.4
+image: tizendev-deps:application-Mobile2.4
 
 stages:
    - build
