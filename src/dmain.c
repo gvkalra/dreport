@@ -109,6 +109,12 @@ panel_hold_cb(void *data, Evas_Object *obj, const char *emission, const char *so
 	elm_object_disabled_set(panel, EINA_FALSE);
 }
 
+static void
+app_exit_cb(void *data, Evas_Object *obj, void *event_info)
+{
+	ui_app_exit();
+}
+
 static void create_drawer_view(Evas_Object *nf)
 {
 	Evas_Object *layout, *bg, *nocontent, *panel, *btn;
@@ -179,6 +185,7 @@ create_base_gui(appdata_s *ad)
 	/* Naviframe */
 	ad->nf = elm_naviframe_add(ad->layout);
 	create_drawer_view(ad->nf);
+	eext_object_event_callback_add(ad->nf, EEXT_CALLBACK_BACK, app_exit_cb, NULL);
 	elm_object_part_content_set(ad->layout, "elm.swallow.content", ad->nf);
 
 	/* Show window after base GUI is set up */
