@@ -8,7 +8,13 @@ cflags = -I"../inc" -O3 -g -Wall -c -fmessage-length=0 -target i386-tizen-linux-
 
 build src/dcore.o: build_c ../src/dcore.c 
 build src/dcore.o.ast: build_c_fast_ast ../src/dcore.c 
-build $sareportdir/src/dcore.o.xml: build_c_fast_sa src/dcore.o.ast || externalFnMap.txt
-build src/dreport.o: build_c ../src/dreport.c 
-build src/dreport.o.ast: build_c_fast_ast ../src/dreport.c 
-build $sareportdir/src/dreport.o.xml: build_c_fast_sa src/dreport.o.ast || externalFnMap.txt
+build $sareportdir/src/dcore.o.xml: build_c_fast_sa src/dcore.o.ast || externalFnMap.txt 
+build src/dhandler.o: build_c ../src/dhandler.c 
+build src/dhandler.o.ast: build_c_fast_ast ../src/dhandler.c 
+build $sareportdir/src/dhandler.o.xml: build_c_fast_sa src/dhandler.o.ast || externalFnMap.txt 
+build src/dmain.o: build_c ../src/dmain.c 
+build src/dmain.o.ast: build_c_fast_ast ../src/dmain.c 
+build $sareportdir/src/dmain.o.xml: build_c_fast_sa src/dmain.o.ast || externalFnMap.txt 
+build src/dutil.o: build_c ../src/dutil.c 
+build src/dutil.o.ast: build_c_fast_ast ../src/dutil.c 
+build $sareportdir/src/dutil.o.xml: build_c_fast_sa src/dutil.o.ast || externalFnMap.txt 
