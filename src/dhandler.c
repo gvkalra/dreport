@@ -84,9 +84,10 @@ _object_cb(void *data, Evas_Object *obj, void *event_info)
 				NULL, NULL, _compare_cb);
 		iter++;
 	}
-	elm_naviframe_item_push(content_nf, service, NULL, NULL, obj_list, NULL);
 
 EXIT:
+	elm_naviframe_item_push(content_nf, service, NULL, NULL, obj_list, NULL);
+
 	if (names != NULL)
 		g_strfreev(names);
 	if (conn != NULL)
