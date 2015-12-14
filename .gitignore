@@ -1,13 +1,4 @@
-.sign
-crash-info
-Debug
-SA_Report
-res
-.package-stamp
-.rds_delta
-.sdk_delta.info
-Release/
-
+#### Linux ####
 *~
 
 # KDE directory preferences
@@ -16,5 +7,11 @@ Release/
 # Linux trash folder which might appear on any partition or disk
 .Trash-*
 
-.cproject
-.project
+#### Tizen IDE ####
+/Debug
+/SA_Report
+/res
+/Release
+.sdk_delta.info
+.sign/
+.rds_delta
