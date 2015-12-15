@@ -153,6 +153,17 @@ session_menu_handler(Evas_Object *layout)
 	_bus_menu_handler(G_BUS_TYPE_SESSION, layout);
 }
 
+void
+listen_menu_handler(Evas_Object *layout)
+{
+	Evas_Object *nocontent;
+	Evas_Object *parent = elm_object_parent_widget_get(layout);
+
+	/* Center View */
+	nocontent = create_nocontent(parent, "Listen Mode Handler");
+	elm_object_part_content_set(layout, "elm.swallow.content", nocontent);
+}
+
 static char *
 _stats_data_label_get(void *data, Evas_Object *obj, const char *part)
 {
