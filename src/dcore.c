@@ -14,9 +14,11 @@ dbus_setup_connection(GBusType bus_type)
 	return conn;
 
 ERROR:
-	dlog_print(DLOG_ERROR, LOG_TAG, "g_bus_get_sync() failed [%d]: %s",
-			error->code, error->message);
-	g_error_free(error);
+	if (error != NULL) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "g_bus_get_sync() failed [%d]: %s",
+				error->code, error->message);
+		g_error_free(error);
+	}
 	return NULL;
 }
 
