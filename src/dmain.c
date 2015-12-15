@@ -34,6 +34,8 @@ panel_selected_cb(void *data, Evas_Object *obj, void *event_info)
 		system_menu_handler(layout);
 	} else if(!g_strcmp0(label, "Session Bus")) {
 		session_menu_handler(layout);
+	} else if(!g_strcmp0(label, "Statistics")) {
+		stats_menu_handler(layout);
 	} else if(!g_strcmp0(label, "About")) {
 		about_menu_handler(layout);
 	} else if(!g_strcmp0(label, "Feedback")) {
@@ -71,6 +73,7 @@ create_panel(Evas_Object *parent)
 
 	elm_list_item_append(list, "System Bus", NULL, NULL, panel_selected_cb, panel);
 	elm_list_item_append(list, "Session Bus", NULL, NULL, panel_selected_cb, panel);
+	elm_list_item_append(list, "Statistics", NULL, NULL, panel_selected_cb, panel);
 	elm_list_item_append(list, "About", NULL, NULL, panel_selected_cb, panel);
 	elm_list_item_append(list, "Feedback", NULL, NULL, panel_selected_cb, panel);
 	evas_object_show(list);
