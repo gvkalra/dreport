@@ -153,6 +153,105 @@ session_menu_handler(Evas_Object *layout)
 	_bus_menu_handler(G_BUS_TYPE_SESSION, layout);
 }
 
+static char *
+_stats_data_label_get(void *data, Evas_Object *obj, const char *part)
+{
+	dbus_stats_data_item *item = data;
+
+	if (!g_strcmp0(part, "elm.text")) {
+		return strdup(item->key);
+	} else if (!g_strcmp0(part, "elm.text.end")) {
+		char *value = NULL;
+		gchar *_value = g_strdup_printf("%u", item->value);
+
+		/* should not use g_strdup() */
+		value = strdup(_value);
+		g_free(_value);
+
+		return value;
+	} else {
+		return NULL;
+	}
+}
+
+static char *
+_stats_header_label_get(void *data, Evas_Object *obj, const char *part)
+{
+	GBusType bus_type = GPOINTER_TO_UINT(data);
+
+	if (!g_strcmp0(part, "elm.text")) {
+		return bus_type == G_BUS_TYPE_SYSTEM ?
+				strdup("System Bus") : strdup("Session Bus");
+	} else {
+		return NULL;
+	}
+}
+
+static void
+_stats_data_item_del(void *data, Evas_Object *obj)
+{
+	dbus_stats_data_item *item = data;
+	g_free(item->key);
+	g_free(item);
+}
+
+void
+stats_menu_handler(Evas_Object *layout)
+{
+	GDBusConnection *conn = NULL;
+	GSList *stats = NULL;
+	GSList *iter = NULL;
+	Evas_Object *list = NULL;
+	Elm_Genlist_Item_Class *itc_stats, *itc_header = NULL;
+
+	/* List */
+	list = elm_genlist_add(layout);
+	elm_object_style_set(list, "default");
+
+	/* Header Style */
+	itc_header = elm_genlist_item_class_new();
+	itc_header->item_style = "default";
+	itc_header->func.text_get = _stats_header_label_get;
+	itc_header->func.content_get = NULL;
+	itc_header->func.del = NULL;
+
+	/* Data Style */
+	itc_stats = elm_genlist_item_class_new();
+	itc_stats->item_style = "group_index";
+	itc_stats->func.text_get = _stats_data_label_get;
+	itc_stats->func.content_get = NULL;
+	itc_stats->func.del = _stats_data_item_del;
+
+	/* System */
+	conn = dbus_setup_connection(G_BUS_TYPE_SYSTEM);
+	stats = dbus_get_stats_summary(conn);
+	elm_genlist_item_append(list, itc_header, GUINT_TO_POINTER(G_BUS_TYPE_SYSTEM),
+					NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+	for (iter = g_slist_nth(stats, 0); iter != NULL; iter = g_slist_next(iter)) {
+		elm_genlist_item_append(list, itc_stats, iter->data,
+				NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+	}
+	g_slist_free(stats); /* we stole all data pointers */
+	dbus_close_connection(conn);
+
+	/* Session */
+	conn = dbus_setup_connection(G_BUS_TYPE_SESSION);
+	stats = dbus_get_stats_summary(conn);
+	elm_genlist_item_append(list, itc_header, GUINT_TO_POINTER(G_BUS_TYPE_SESSION),
+					NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+	for (iter = g_slist_nth(stats, 0); iter != NULL; iter = g_slist_next(iter)) {
+		elm_genlist_item_append(list, itc_stats, iter->data,
+				NULL, ELM_GENLIST_ITEM_NONE, NULL, NULL);
+	}
+	g_slist_free(stats);
+	dbus_close_connection(conn);
+
+	/* Cleanup */
+	elm_genlist_item_class_free(itc_stats);
+	elm_genlist_item_class_free(itc_header);
+	elm_object_part_content_set(layout, "elm.swallow.content", list);
+}
+
 void
 about_menu_handler(Evas_Object *layout)
 {

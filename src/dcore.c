@@ -1,4 +1,5 @@
 #include "dcore.h"
+#include "dutil.h"
 #include <dlog.h>
 
 GDBusConnection *
@@ -150,6 +151,51 @@ dbus_get_names(GDBusConnection *connection, gboolean allow_anonymous)
 		g_strfreev(names);
 		return filtered_names;
 	}
+}
+
+GSList *
+dbus_get_stats_summary(GDBusConnection *connection)
+{
+	GSList *list = NULL;
+	dbus_stats_data_item *data = NULL;
+	GDBusProxy *proxy = NULL;
+	GVariant *value = NULL;
+	GVariantIter *iter = NULL;
+	const gchar *key = NULL;
+	GVariant *result = NULL;
+	GError *error = NULL;
+
+	/* Setup proxy */
+	proxy = g_dbus_proxy_new_sync(connection, G_DBUS_PROXY_FLAGS_NONE, NULL,
+			"org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus",
+			NULL, &error);
+	g_assert_no_error(error);
+	g_assert(proxy);
+
+	/* Get Stats */
+	result = g_dbus_proxy_call_sync(proxy, "org.freedesktop.DBus.Debug.Stats.GetStats",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
+	g_assert_no_error(error);
+	g_assert(result);
+	g_variant_get(result, "(a{sv})", &iter);
+
+	while (g_variant_iter_loop(iter, "{sv}", &key, &value)) {
+		data = g_new0(dbus_stats_data_item, 1);
+
+		data->key = g_strdup(key);
+		data->value = g_variant_get_uint32(value);
+		dlog_print(DLOG_VERBOSE, LOG_TAG, "key = %s, value = %u",
+				data->key, data->value);
+
+		list = g_slist_prepend(list, data);
+	}
+
+	/* Cleanup */
+	g_variant_iter_free(iter);
+	g_variant_unref(result);
+	g_object_unref(proxy);
+
+	return list;
 }
 
 void
