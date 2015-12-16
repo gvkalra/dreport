@@ -153,11 +153,26 @@ session_menu_handler(Evas_Object *layout)
 	_bus_menu_handler(G_BUS_TYPE_SESSION, layout);
 }
 
+static void
+_system_bus_listener(GDBusConnection *connection, dbus_listener_data_item *data, void *user_data)
+{
+	dlog_print(DLOG_VERBOSE, LOG_TAG, "sender_name = %s, object_path = %s, interface_name = %s, signal_name = %s, message = %s",
+			data->sender_name == NULL ? "NULL" : data->sender_name,
+			data->object_path == NULL ? "NULL" : data->object_path,
+			data->interface_name == NULL ? "NULL" : data->interface_name,
+			data->signal_name == NULL ? "NULL" : data->signal_name,
+			data->message == NULL ? "NULL" : data->message);
+}
+
 void
 listen_menu_handler(Evas_Object *layout)
 {
 	Evas_Object *nocontent;
+	GDBusConnection *conn = NULL;
 	Evas_Object *parent = elm_object_parent_widget_get(layout);
+
+	conn = dbus_setup_connection(G_BUS_TYPE_SYSTEM);
+	(void)dbus_register_listener(conn, _system_bus_listener, NULL, NULL);
 
 	/* Center View */
 	nocontent = create_nocontent(parent, "Listen Mode Handler");

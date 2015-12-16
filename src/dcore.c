@@ -2,6 +2,12 @@
 #include "dutil.h"
 #include <dlog.h>
 
+struct _dbus_listener_ud {
+	dbus_listener_cb s_cb;
+	dbus_listener_destroy_cb d_cb;
+	void *user_data;
+};
+
 GDBusConnection *
 dbus_setup_connection(GBusType bus_type)
 {
@@ -196,6 +202,63 @@ dbus_get_stats_summary(GDBusConnection *connection)
 	g_object_unref(proxy);
 
 	return list;
+}
+
+static void
+_dbus_listener_cb_internal(GDBusConnection *connection, const gchar *sender_name, const gchar *object_path,
+		const gchar *interface_name, const gchar *signal_name, GVariant *parameters, gpointer user_data)
+{
+	struct _dbus_listener_ud *ud = user_data;
+	dbus_listener_data_item *data = g_new0(dbus_listener_data_item, 1);
+
+	data->sender_name = sender_name;
+	data->object_path = object_path;
+	data->interface_name = interface_name;
+	data->signal_name = signal_name;
+	data->message = g_strdup("MESSAGE");
+
+	/* Invoke registered callback */
+	ud->s_cb(connection, data, ud->user_data);
+
+	/* Cleanup */
+	g_free(data->message);
+	g_free(data);
+}
+
+static void
+_dbus_listener_destroy_cb_internal(gpointer user_data)
+{
+	struct _dbus_listener_ud *ud = user_data;
+
+	/* Invoke registered callback and then free self */
+	ud->d_cb(ud->user_data);
+	g_free(ud);
+}
+
+gint
+dbus_register_listener(GDBusConnection *connection, dbus_listener_cb s_cb, void *user_data, dbus_listener_destroy_cb d_cb)
+{
+	guint id;
+
+	struct _dbus_listener_ud *ud = g_new0(struct _dbus_listener_ud, 1);
+	ud->s_cb = s_cb;
+	ud->d_cb = d_cb;
+	ud->user_data = user_data;
+
+	id = g_dbus_connection_signal_subscribe(connection, NULL, NULL, NULL, NULL,
+			NULL, G_DBUS_SIGNAL_FLAGS_NONE,
+			_dbus_listener_cb_internal, ud, _dbus_listener_destroy_cb_internal);
+
+	return id == 0 ? (-1) : (id);
+}
+
+void
+dbus_deregister_listener(GDBusConnection *connection, gint id)
+{
+	if (id <= 0)
+		return;
+
+	g_dbus_connection_signal_unsubscribe(connection, (guint)id);
 }
 
 void
