@@ -204,25 +204,41 @@ dbus_get_stats_summary(GDBusConnection *connection)
 	return list;
 }
 
-static void
-_dbus_listener_cb_internal(GDBusConnection *connection, const gchar *sender_name, const gchar *object_path,
-		const gchar *interface_name, const gchar *signal_name, GVariant *parameters, gpointer user_data)
+static GDBusMessage *
+_dbus_listener_cb_internal(GDBusConnection *connection, GDBusMessage *message, gboolean is_incoming, gpointer user_data)
 {
 	struct _dbus_listener_ud *ud = user_data;
 	dbus_listener_data_item *data = g_new0(dbus_listener_data_item, 1);
 
-	data->sender_name = sender_name;
-	data->object_path = object_path;
-	data->interface_name = interface_name;
-	data->signal_name = signal_name;
-	data->message = g_strdup("MESSAGE");
+	data->hdr.type = g_dbus_message_get_message_type(message);
+	data->hdr.sender = g_dbus_message_get_sender(message);
+	data->hdr.destination = g_dbus_message_get_destination(message);
+	data->hdr.message = g_strdup("DUMMY MESSAGE"); /* TODO: Parse message and fill it here */
+
+	switch(data->hdr.type) {
+	case G_DBUS_MESSAGE_TYPE_METHOD_CALL:
+	case G_DBUS_MESSAGE_TYPE_SIGNAL: /* Fall Through */
+		data->method.path = g_dbus_message_get_path(message);
+		data->method.interface = g_dbus_message_get_interface(message);
+		data->method.member = g_dbus_message_get_member(message);
+	break;
+
+	case G_DBUS_MESSAGE_TYPE_ERROR:
+		data->error.name = g_dbus_message_get_error_name(message);
+	break;
+
+	default:
+		break;
+	}
 
 	/* Invoke registered callback */
 	ud->s_cb(connection, data, ud->user_data);
 
 	/* Cleanup */
-	g_free(data->message);
+	g_free(data->hdr.message);
 	g_free(data);
+
+	return message; /* !! return unmodified message to daemon */
 }
 
 static void
@@ -235,20 +251,72 @@ _dbus_listener_destroy_cb_internal(gpointer user_data)
 	g_free(ud);
 }
 
+static gboolean
+_dbus_eavesdrop_all(GDBusProxy *proxy, gboolean with_eavesdrop)
+{
+#define EAVESDROP "eavesdrop=true,"
+	char *rules[] = {
+			EAVESDROP "type='signal'",
+			EAVESDROP "type='method_call'",
+			EAVESDROP "type='method_return'",
+			EAVESDROP "type='error'",
+			NULL
+	};
+	const gsize offset = with_eavesdrop ? 0 : strlen(EAVESDROP);
+	char **r = NULL;
+	GError *error = NULL;
+
+	for(r = rules; *r != NULL; r++) {
+		GVariant *result = NULL;
+		const gchar *rule = *r + offset;
+
+		result = g_dbus_proxy_call_sync(proxy, "AddMatch",
+				g_variant_new("(s)", rule), G_DBUS_CALL_FLAGS_NONE,
+				-1, NULL, &error);
+
+		if (result == NULL || error != NULL) {
+			dlog_print(DLOG_ERROR, LOG_TAG, "Unable to add rule: [%s]", *r);
+			if (error != NULL) {
+				dlog_print(DLOG_ERROR, LOG_TAG, "AddMatch failed: [%d] : [%s]",
+						error->code, error->message);
+				g_error_free(error);
+			}
+			return FALSE;
+		} else {
+			g_variant_unref(result);
+		}
+	}
+
+	return TRUE;
+}
+
 gint
 dbus_register_listener(GDBusConnection *connection, dbus_listener_cb s_cb, void *user_data, dbus_listener_destroy_cb d_cb)
 {
-	guint id;
-
+	guint id = 0;
+	GDBusProxy *proxy = NULL;
+	GError *error = NULL;
 	struct _dbus_listener_ud *ud = g_new0(struct _dbus_listener_ud, 1);
+
 	ud->s_cb = s_cb;
 	ud->d_cb = d_cb;
 	ud->user_data = user_data;
 
-	id = g_dbus_connection_signal_subscribe(connection, NULL, NULL, NULL, NULL,
-			NULL, G_DBUS_SIGNAL_FLAGS_NONE,
-			_dbus_listener_cb_internal, ud, _dbus_listener_destroy_cb_internal);
+	/* Setup proxy */
+	proxy = g_dbus_proxy_new_sync(connection,
+			G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES | G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS, NULL,
+			"org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", NULL, &error);
+	if (error != NULL || proxy == NULL)
+		goto EXIT;
 
+	/* Add filters */
+	if (!_dbus_eavesdrop_all(proxy, TRUE) && !_dbus_eavesdrop_all(proxy, FALSE))
+		goto EXIT;
+
+	id = g_dbus_connection_add_filter(connection, _dbus_listener_cb_internal, ud, _dbus_listener_destroy_cb_internal);
+
+EXIT:
+	g_object_unref(proxy);
 	return id == 0 ? (-1) : (id);
 }
 
@@ -258,7 +326,7 @@ dbus_deregister_listener(GDBusConnection *connection, gint id)
 	if (id <= 0)
 		return;
 
-	g_dbus_connection_signal_unsubscribe(connection, (guint)id);
+	g_dbus_connection_remove_filter(connection, (guint)id);
 }
 
 void

@@ -156,12 +156,45 @@ session_menu_handler(Evas_Object *layout)
 static void
 _system_bus_listener(GDBusConnection *connection, dbus_listener_data_item *data, void *user_data)
 {
-	dlog_print(DLOG_VERBOSE, LOG_TAG, "sender_name = %s, object_path = %s, interface_name = %s, signal_name = %s, message = %s",
-			data->sender_name == NULL ? "NULL" : data->sender_name,
-			data->object_path == NULL ? "NULL" : data->object_path,
-			data->interface_name == NULL ? "NULL" : data->interface_name,
-			data->signal_name == NULL ? "NULL" : data->signal_name,
-			data->message == NULL ? "NULL" : data->message);
+	switch (data->hdr.type) {
+	case G_DBUS_MESSAGE_TYPE_METHOD_CALL:
+		dlog_print(DLOG_VERBOSE, LOG_TAG, "[METHOD_CALL] [%s -> %s] : [%s] {%s - %s - %s}",
+				data->hdr.sender ? data->hdr.sender : "NULL",
+				data->hdr.destination ? data->hdr.destination : "NULL",
+				data->hdr.message ? data->hdr.message : "NULL",
+				data->method.path ? data->method.path : "NULL",
+				data->method.interface ? data->method.interface : "NULL",
+				data->method.member ? data->method.member : "NULL");
+	break;
+
+	case G_DBUS_MESSAGE_TYPE_SIGNAL:
+		dlog_print(DLOG_VERBOSE, LOG_TAG, "[SIGNAL] [%s -> %s] : [%s] {%s - %s - %s}",
+				data->hdr.sender ? data->hdr.sender : "NULL",
+				data->hdr.destination ? data->hdr.destination : "NULL",
+				data->hdr.message ? data->hdr.message : "NULL",
+				data->method.path ? data->method.path : "NULL",
+				data->method.interface ? data->method.interface : "NULL",
+				data->method.member ? data->method.member : "NULL");
+	break;
+
+	case G_DBUS_MESSAGE_TYPE_ERROR:
+		dlog_print(DLOG_VERBOSE, LOG_TAG, "[ERROR] [%s -> %s] : [%s] {%s}",
+				data->hdr.sender ? data->hdr.sender : "NULL",
+				data->hdr.destination ? data->hdr.destination : "NULL",
+				data->hdr.message ? data->hdr.message : "NULL",
+				data->error.name ? data->error.name : "NULL");
+	break;
+
+	case G_DBUS_MESSAGE_TYPE_METHOD_RETURN:
+		dlog_print(DLOG_VERBOSE, LOG_TAG, "[METHOD_RETURN] [%s -> %s] : [%s]",
+				data->hdr.sender ? data->hdr.sender : "NULL",
+				data->hdr.destination ? data->hdr.destination : "NULL",
+				data->hdr.message ? data->hdr.message : "NULL");
+	break;
+
+	default:
+	break;
+	}
 }
 
 void

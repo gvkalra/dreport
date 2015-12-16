@@ -9,11 +9,28 @@ typedef struct {
 } dbus_stats_data_item;
 
 typedef struct {
-	const gchar *sender_name;
-	const gchar *object_path;
-	const gchar *interface_name;
-	const gchar *signal_name;
-	const gchar *message; /* Formatted message */
+	guint type; /* GDBusMessageType */
+	const gchar *sender;
+	const gchar *destination;
+	const gchar *message;
+} dbus_listener_data_header;
+
+typedef struct {
+	dbus_listener_data_header hdr;
+	const gchar *path;
+	const gchar *interface;
+	const gchar *member;
+} dbus_listener_data_method;
+
+typedef struct {
+	dbus_listener_data_header hdr;
+	const gchar *name;
+} dbus_listener_data_error;
+
+typedef union {
+	dbus_listener_data_header hdr;
+	dbus_listener_data_method method;
+	dbus_listener_data_error error;
 } dbus_listener_data_item;
 
 typedef void (*dbus_listener_cb)(GDBusConnection *connection, dbus_listener_data_item *data, void *user_data);
