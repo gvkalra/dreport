@@ -1,3 +1,5 @@
+:warning: **This repository is not maintained anymore.**
+
 # dreport
 
 **Tizen app to inspect D-BUS interfaces**
